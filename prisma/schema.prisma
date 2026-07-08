@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum FileCategory {
+  image
+  video
+  audio
+  document
+  archive
+  other
+}
+
+enum UploadStatus {
+  queued
+  validating
+  uploading
+  uploaded_to_telegram
+  metadata_saved
+  completed
+  failed
+  recovery_required
+}
+
+enum AuditAction {
+  login_attempt
+  login_success
+  logout
+  upload_started
+  upload_completed
+  upload_failed
+  download
+  preview
+  rename
+  tag_update
+  soft_delete
+  restore
+  permanent_delete
+  telegram_configuration_update
+  encryption_configuration_update
+  recovery_action
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  role         String       @default("admin")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  files        FileRecord[]
+  auditLogs    AuditLog[]
+}
+
+model TelegramDestination {
+  id              String       @id @default(cuid())
+  category        FileCategory @unique
+  label           String
+  encryptedChatId String?
+  chatIdSource    String       @default("environment")
+  preserveQuality Boolean      @default(true)
+  useMediaPreview Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  files           FileRecord[]
+}
+
+model SecuritySetting {
+  id                String   @id @default(cuid())
+  singleton         String   @unique @default("default")
+  maxUploadSizeMb   Int      @default(50)
+  allowedMimeTypes  String[] @default([])
+  blockedMimeTypes  String[] @default([])
+  allowedExtensions String[] @default([])
+  blockedExtensions String[] @default([])
+  encryptionEnabled Boolean  @default(false)
+  chunkingEnabled   Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+}
+
+model Folder {
+  id        String       @id @default(cuid())
+  ownerId   String
+  name      String
+  parentId  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  files     FileRecord[]
+}
+
+model FileRecord {
+  id                    String       @id @default(cuid())
+  ownerId               String
+  owner                 User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  originalName          String
+  displayName           String
+  extension             String
+  mimeType              String
+  fileSize              BigInt
+  category              FileCategory
+  checksum              String
+  telegramDestinationId String?
+  telegramDestination   TelegramDestination? @relation(fields: [telegramDestinationId], references: [id])
+  telegramChatIdRef     String
+  telegramMessageId     Int?
+  telegramFileId        String?
+  telegramUniqueFileId  String?
+  telegramMediaType     String?
+  uploadStatus          UploadStatus @default(queued)
+  encryptionStatus      Boolean      @default(false)
+  encryptionVersion     Int?
+  encryptionNonce       String?
+  encryptionAuthTag     String?
+  customFolderId        String?
+  customFolder          Folder?      @relation(fields: [customFolderId], references: [id])
+  tags                  String[]     @default([])
+  description           String?
+  deletedAt             DateTime?
+  isFavourite           Boolean      @default(false)
+  isArchived            Boolean      @default(false)
+  availability          String       @default("available")
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  chunks                FileChunk[]
+
+  @@index([ownerId, category, createdAt])
+  @@index([checksum])
+  @@index([deletedAt])
+}
+
+model FileChunk {
+  id                   String     @id @default(cuid())
+  fileRecordId         String
+  fileRecord           FileRecord @relation(fields: [fileRecordId], references: [id], onDelete: Cascade)
+  chunkIndex           Int
+  byteSize             Int
+  checksum             String
+  telegramMessageId    Int
+  telegramFileId       String?
+  telegramUniqueFileId String?
+  encryptionNonce      String?
+  encryptionAuthTag    String?
+  createdAt            DateTime   @default(now())
+
+  @@unique([fileRecordId, chunkIndex])
+}
+
+model UploadRecovery {
+  id                String       @id @default(cuid())
+  ownerId           String
+  originalName      String
+  checksum          String?
+  category          FileCategory?
+  telegramChatId    String?
+  telegramMessageId Int?
+  telegramFileId    String?
+  status            UploadStatus @default(recovery_required)
+  reason            String
+  payload           Json?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    AuditAction
+  targetId  String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([action, createdAt])
+  @@index([userId, createdAt])
+}

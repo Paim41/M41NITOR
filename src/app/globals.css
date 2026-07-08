@@ -1,0 +1,235 @@
+@import "tailwindcss";
+
+:root {
+  /* ---- M41NITOR palette (fixed 4-color system) ---- */
+  --c-black: #000000;
+  --c-maroon: #4C0033;
+  --c-grey: #DDDDDD;
+  --c-white: #EEEEEE;
+
+  --background: var(--c-black);
+  --foreground: var(--c-white);
+  --panel: var(--c-black);
+  --raised: #170010;
+  --border: var(--c-maroon);
+  --primary: var(--c-maroon);
+  --primary-glow: #8a0055;
+  --secondary: var(--c-grey);
+  --warning: #b8860b;
+  --error: #8b1a2b;
+
+  --gray-100: var(--c-white);
+  --gray-200: var(--c-grey);
+  --gray-300: #bdbdbd;
+  --gray-400: #9a9a9a;
+  --gray-500: #7a7a7a;
+  --gray-600: #5a5a5a;
+  --gray-700: #3a3a3a;
+  --gray-800: #1a1a1a;
+  --gray-900: #000000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-terminal);
+  --font-mono: var(--font-terminal);
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--c-black);
+  background-image:
+    linear-gradient(160deg, rgba(0, 0, 0, 0.72), rgba(76, 0, 51, 0.55)),
+    url("/brand/m41nitor-bg-desktop.png");
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: var(--foreground);
+  font-family: var(--font-terminal), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  min-height: 100dvh;
+}
+
+/* Responsive wallpaper: swap to the portrait piece on small / mobile viewports */
+@media (max-width: 767px) {
+  body {
+    background-image:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.78), rgba(76, 0, 51, 0.62)),
+      url("/brand/m41nitor-bg-mobile.png");
+    background-position: center top;
+    background-attachment: scroll;
+  }
+}
+
+button, input, textarea, select {
+  font: inherit;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-maroon) #0a0a0a;
+}
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: #0a0a0a; }
+*::-webkit-scrollbar-thumb { background: var(--c-maroon); border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--primary-glow); }
+
+.glass-active {
+  background:
+    linear-gradient(180deg, rgba(76, 0, 51, 0.55), rgba(76, 0, 51, 0.22)),
+    rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(138, 0, 85, 0.65);
+  box-shadow:
+    0 8px 24px rgba(76, 0, 51, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.terminal-grid {
+  background-image:
+    linear-gradient(rgba(76, 0, 51, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76, 0, 51, 0.14) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.app-surface {
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.20), rgba(76, 0, 51, 0.14)),
+    transparent;
+}
+
+.glass-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(221, 221, 221, 0.12);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
+.glass-raised {
+  background:
+    linear-gradient(180deg, rgba(76, 0, 51, 0.20), rgba(0, 0, 0, 0.35)),
+    rgba(10, 10, 10, 0.45);
+  border: 1px solid rgba(221, 221, 221, 0.10);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px) saturate(145%);
+  -webkit-backdrop-filter: blur(16px) saturate(145%);
+}
+
+.glass-input {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(221, 221, 221, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.bg-\[\#212529\] {
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(14px);
+}
+
+.bg-\[\#343A40\] {
+  background: rgba(76, 0, 51, 0.24);
+  backdrop-filter: blur(10px);
+}
+
+@media (max-width: 767px) {
+  section[class*="border"],
+  article[class*="border"],
+  div[class*="border"] {
+    border-radius: 6px;
+  }
+
+  main > section {
+    min-width: 0;
+  }
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--c-maroon);
+  outline-offset: 2px;
+}
+
+/* ---------------- Hover effects ---------------- */
+.hover-card,
+.glass-raised,
+article.glass-raised {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+}
+.hover-card:hover,
+article.glass-raised:hover {
+  transform: translateY(-4px) scale(1.012);
+  border-color: rgba(138, 0, 85, 0.75);
+  box-shadow:
+    0 20px 44px rgba(76, 0, 51, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.nav-link {
+  position: relative;
+  transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease;
+  border-left: 2px solid transparent;
+}
+.nav-link:hover {
+  background: rgba(76, 0, 51, 0.28);
+  color: var(--c-white);
+  padding-left: 0.9rem;
+  border-left-color: var(--c-maroon);
+}
+
+button {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+}
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.folder-tile {
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+}
+.folder-tile:hover {
+  transform: translateY(-3px);
+  background: rgba(76, 0, 51, 0.30);
+  box-shadow: 0 14px 30px rgba(76, 0, 51, 0.4);
+}
+
+/* ---------------- Page load transition ---------------- */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(14px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.page-transition {
+  animation: page-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-enter {
+  animation: card-enter 0.36s ease both;
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-pop {
+  animation: modal-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
