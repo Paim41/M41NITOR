@@ -144,7 +144,7 @@ export default function M41nitorTerminal() {
   const [active, setActive] = useState<(typeof sidebar)[number][0]>("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [files, setFiles] = useState<SafeFileRecord[]>([]);
+  const [fileResult, setFileResult] = useState<{ scopeKey: string; files: SafeFileRecord[] }>({ scopeKey: "", files: [] });
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("newest");
@@ -186,24 +186,26 @@ export default function M41nitorTerminal() {
   const privateRoot = useMemo(() => rootFolder(folders, "Private Content"), [folders]);
 
   const activeFolderScope = useMemo(() => {
-    if (active === "techweb") return techFolderId ?? techRoot?.id ?? null;
-    if (active === "project") return projectRoot?.id ?? null;
-    if (active === "private") return privateUnlocked ? privateRoot?.id ?? null : "__locked__";
+    if (active === "techweb") return techFolderId ?? techRoot?.id ?? "__loading__";
+    if (active === "project") return projectRoot?.id ?? "__loading__";
+    if (active === "private") return privateUnlocked && privateRoot ? privateRoot.id : "__locked__";
     return undefined;
   }, [active, techFolderId, techRoot, projectRoot, privateRoot, privateUnlocked]);
+  const fileScopeKey = useMemo(() => `${active}:${activeFolderScope ?? "all"}:${query}:${sort}`, [active, activeFolderScope, query, sort]);
+  const files = useMemo(() => fileResult.scopeKey === fileScopeKey ? fileResult.files : [], [fileResult, fileScopeKey]);
 
   const refreshFiles = useCallback(async () => {
     if (!user) return;
-    if (activeFolderScope === "__locked__") {
-      setFiles([]);
+    if (typeof activeFolderScope === "string" && activeFolderScope.startsWith("__")) {
+      setFileResult({ scopeKey: fileScopeKey, files: [] });
       return;
     }
     const params = new URLSearchParams({ q: query, sort });
     if (active === "image") params.set("category", "image");
     if (typeof activeFolderScope === "string") params.set("folderId", activeFolderScope);
     const data = await api<{ files: SafeFileRecord[] }>(`/api/files?${params}`);
-    setFiles(data.files);
-  }, [active, activeFolderScope, query, sort, user]);
+    setFileResult({ scopeKey: fileScopeKey, files: data.files });
+  }, [active, activeFolderScope, fileScopeKey, query, sort, user]);
 
   const refreshDashboard = useCallback(async () => {
     if (!user) return;
@@ -232,10 +234,6 @@ export default function M41nitorTerminal() {
     }, 0);
     return () => window.clearTimeout(refreshTimer);
   }, [refreshFiles, refreshDashboard, refreshFolders]);
-
-  useEffect(() => {
-    if (active !== "techweb") setTechFolderId(null);
-  }, [active]);
 
   useEffect(() => {
     const onPaste = (event: ClipboardEvent) => {
@@ -417,7 +415,7 @@ export default function M41nitorTerminal() {
   if (!user) {
     return (
       <main className="terminal-grid app-surface flex min-h-screen items-center justify-center p-6">
-        <form onSubmit={submitLogin} className="glass-panel page-transition w-full max-w-md border border-[#4C0033] p-6 shadow-2xl">
+        <form onSubmit={submitLogin} className="glass-panel page-transition w-full max-w-md border border-white/15 p-6 shadow-2xl">
           <div className="mb-8 flex items-center gap-3">
             <BrandLogo className="size-14" />
             <div>
@@ -427,14 +425,14 @@ export default function M41nitorTerminal() {
           </div>
           <label className="mb-4 block text-sm text-[#DDDDDD]">
             Administrator email
-            <input className="focus-ring glass-input mt-2 w-full border border-[#4C0033] px-3 py-3 text-[#EEEEEE]" value={login.email} onChange={(event) => setLogin({ ...login, email: event.target.value })} autoComplete="username" />
+            <input className="focus-ring glass-input mt-2 w-full border border-white/15 px-3 py-3 text-[#EEEEEE]" value={login.email} onChange={(event) => setLogin({ ...login, email: event.target.value })} autoComplete="username" />
           </label>
           <label className="mb-4 block text-sm text-[#DDDDDD]">
             Password
-            <input className="focus-ring glass-input mt-2 w-full border border-[#4C0033] px-3 py-3 text-[#EEEEEE]" type="password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} autoComplete="current-password" />
+            <input className="focus-ring glass-input mt-2 w-full border border-white/15 px-3 py-3 text-[#EEEEEE]" type="password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} autoComplete="current-password" />
           </label>
-          {loginError && <p className="glass-raised mb-4 border border-[#8b1a2b] px-3 py-2 text-sm text-[#EEEEEE]">{loginError}</p>}
-          <button className="focus-ring flex w-full items-center justify-center gap-2 bg-[#4C0033] px-4 py-3 font-semibold text-[#EEEEEE] hover:bg-[#650044]" type="submit">
+          {loginError && <p className="glass-raised mb-4 border border-white/15 px-3 py-2 text-sm text-[#EEEEEE]">{loginError}</p>}
+          <button className="focus-ring flex w-full items-center justify-center gap-2 bg-[#48CAE4] px-4 py-3 font-semibold text-[#000000] hover:bg-[#8EE6F2]" type="submit">
             <LockKeyhole className="size-4" aria-hidden />
             Enter Terminal
           </button>
@@ -449,7 +447,7 @@ export default function M41nitorTerminal() {
         <div className="fixed inset-0 z-50 md:hidden">
           <button className="absolute inset-0 bg-black/70" aria-label="Close navigation" onClick={() => setMobileMenuOpen(false)} />
           <aside className="glass-panel modal-pop relative flex h-full w-[min(88vw,22rem)] flex-col border-r border-white/10 shadow-2xl">
-            <div className="flex h-16 items-center justify-between border-b border-[#4C0033] px-4">
+            <div className="flex h-16 items-center justify-between border-b border-white/15 px-4">
               <div className="flex min-w-0 items-center gap-3">
                 <BrandLogo className="size-9 shrink-0" />
                 <span className="truncate text-sm font-semibold">M41NITOR</span>
@@ -473,8 +471,8 @@ export default function M41nitorTerminal() {
                 </button>
               ))}
             </nav>
-            <div className="border-t border-[#4C0033] p-3">
-              <button className="focus-ring flex w-full items-center gap-2 border border-[#4C0033] px-3 py-3 text-left text-sm text-[#DDDDDD]" onClick={logout}>
+            <div className="border-t border-white/15 p-3">
+              <button className="focus-ring flex w-full items-center gap-2 border border-white/15 px-3 py-3 text-left text-sm text-[#DDDDDD]" onClick={logout}>
                 <LogOut className="size-4" aria-hidden />
                 <span className="min-w-0 truncate">{user.email}</span>
               </button>
@@ -484,7 +482,7 @@ export default function M41nitorTerminal() {
       )}
 
       <aside className={clsx("glass-panel hidden border-r border-white/10 transition-all duration-300 md:block", collapsed ? "w-20" : "w-72")}>
-        <div className="flex h-16 items-center justify-between border-b border-[#4C0033] px-4">
+        <div className="flex h-16 items-center justify-between border-b border-white/15 px-4">
           <div className="flex items-center gap-3 overflow-hidden">
             <BrandLogo className="size-9 shrink-0" />
             {!collapsed && <span className="truncate text-sm font-semibold">M41NITOR</span>}
@@ -504,9 +502,9 @@ export default function M41nitorTerminal() {
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="glass-panel sticky top-0 z-30 flex min-h-16 flex-wrap items-center gap-3 border-b border-[#4C0033] px-3 py-3 md:px-4">
+        <header className="glass-panel sticky top-0 z-30 flex min-h-16 flex-wrap items-center gap-3 border-b border-white/15 px-3 py-3 md:px-4">
           <div className="flex w-full items-center gap-3 md:hidden">
-            <button className="focus-ring border border-[#4C0033] p-2 text-[#DDDDDD]" onClick={() => setMobileMenuOpen(true)} aria-label="Open navigation">
+            <button className="focus-ring border border-white/15 p-2 text-[#DDDDDD]" onClick={() => setMobileMenuOpen(true)} aria-label="Open navigation">
               <Menu className="size-5" />
             </button>
             <div className="min-w-0 flex-1">
@@ -516,13 +514,13 @@ export default function M41nitorTerminal() {
               </div>
               <p className="truncate text-xs text-[#DDDDDD]">Secure Telegram storage terminal</p>
             </div>
-            <button className="focus-ring border border-[#4C0033] p-2 text-[#DDDDDD]" onClick={logout} aria-label="Log out">
+            <button className="focus-ring border border-white/15 p-2 text-[#DDDDDD]" onClick={logout} aria-label="Log out">
               <LogOut className="size-5" />
             </button>
           </div>
           <div className="relative min-w-0 flex-1 basis-full md:min-w-64 md:basis-auto">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#DDDDDD]" aria-hidden />
-            <input className="focus-ring glass-input w-full border border-[#4C0033] py-2 pl-9 pr-3 text-sm" placeholder="Search files, MIME types, tags, checksums" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <input className="focus-ring glass-input w-full border border-white/15 py-2 pl-9 pr-3 text-sm" placeholder="Search files, MIME types, tags, checksums" value={query} onChange={(event) => setQuery(event.target.value)} />
           </div>
           <div className="hidden flex-wrap items-center gap-3 xl:flex">
             <StatusChip icon={Gauge} label="Connection" value="Backend guarded" />
@@ -530,7 +528,7 @@ export default function M41nitorTerminal() {
             <StatusChip icon={HardDriveUpload} label="Queue" value={String(queue.filter((item) => item.status === "uploading").length)} />
             <StatusChip icon={Database} label="Logical storage used" value={bytes(dashboard?.logicalSize ?? 0)} />
           </div>
-          <button className="focus-ring hidden items-center gap-2 border border-[#4C0033] px-3 py-2 text-sm text-[#DDDDDD] md:flex" onClick={logout}>
+          <button className="focus-ring hidden items-center gap-2 border border-white/15 px-3 py-2 text-sm text-[#DDDDDD] md:flex" onClick={logout}>
             <LogOut className="size-4" aria-hidden />
             {user.email}
           </button>
@@ -577,7 +575,18 @@ export default function M41nitorTerminal() {
             )}
             {active === "private" && !privateUnlocked && <PrivatePasscodeGate onUnlock={() => setPrivateUnlocked(true)} />}
             {active === "private" && privateUnlocked && (
-              <FileManager title="Private Content" files={visibleFiles} view={view} setView={setView} sort={sort} setSort={setSort} mutateFile={mutateFile} downloadFile={downloadFile} deleteFile={deleteFile} />
+              <>
+                <div className="flex justify-end">
+                  <button
+                    className="focus-ring flex items-center gap-2 border border-white/15 px-4 py-2 text-sm text-[#DDDDDD] hover:bg-[#48CAE4]/10 hover:text-[#EEEEEE]"
+                    onClick={() => setPrivateUnlocked(false)}
+                  >
+                    <LockKeyhole className="size-4" aria-hidden />
+                    Lock
+                  </button>
+                </div>
+                <FileManager title="Private Content" files={visibleFiles} view={view} setView={setView} sort={sort} setSort={setSort} mutateFile={mutateFile} downloadFile={downloadFile} deleteFile={deleteFile} />
+              </>
             )}
             {["all", "project", "image", "favourites"].includes(active) && (
               <FileManager
@@ -598,12 +607,12 @@ export default function M41nitorTerminal() {
           </div>
         </div>
 
-        <nav className="glass-panel fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-[#4C0033] px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 md:hidden">
+        <nav className="glass-panel fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/15 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 md:hidden">
           {quickNav.map(([id, , Icon]) => (
             <button
               key={id}
               onClick={() => setActive(id)}
-              className={clsx("focus-ring flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[0.65rem] text-[#DDDDDD]", active === id && "border border-[#4C0033] text-[#EEEEEE]")}
+              className={clsx("focus-ring flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 text-[0.65rem] text-[#DDDDDD]", active === id && "border border-white/15 text-[#EEEEEE]")}
             >
               <Icon className="size-5" aria-hidden />
               <span className="w-full truncate text-center">{id === "dashboard" ? "Home" : id === "upload" ? "Upload" : id === "all" ? "Files" : "Tech Web"}</span>
@@ -628,7 +637,7 @@ export default function M41nitorTerminal() {
 function SetupMissing() {
   return (
     <main className="terminal-grid app-surface flex min-h-screen items-center justify-center p-6">
-      <section className="glass-panel page-transition max-w-2xl border border-[#4C0033] p-6">
+      <section className="glass-panel page-transition max-w-2xl border border-white/15 p-6">
         <div className="mb-4 flex items-center gap-3 text-[#EEEEEE]">
           <ShieldAlert className="size-6" aria-hidden />
           <h1 className="text-xl font-semibold">Configuration required</h1>
@@ -648,7 +657,8 @@ function BrandLogo({ className = "size-8" }: { className?: string }) {
       alt=""
       width={96}
       height={96}
-      className={clsx("object-contain drop-shadow-[0_0_14px_rgba(76,0,51,0.85)]", className)}
+      loading="eager"
+      className={clsx("object-contain drop-shadow-[0_0_14px_rgba(72,202,228,0.28)]", className)}
       aria-hidden
     />
   );
@@ -656,7 +666,7 @@ function BrandLogo({ className = "size-8" }: { className?: string }) {
 
 function StatusChip({ icon: Icon, label, value }: { icon: typeof Gauge; label: string; value: string }) {
   return (
-    <div className="glass-raised flex items-center gap-2 border border-[#4C0033] px-3 py-2 text-xs">
+    <div className="glass-raised flex items-center gap-2 border border-white/15 px-3 py-2 text-xs">
       <Icon className="size-4 text-[#EEEEEE]" aria-hidden />
       <span className="text-[#DDDDDD]">{label}</span>
       <span>{value}</span>
@@ -694,7 +704,7 @@ function Dashboard({ dashboard }: { dashboard: DashboardData | null }) {
                   <span>{item.count}</span>
                 </div>
                 <div className="h-2 bg-black/60">
-                  <div className="h-full bg-[#4C0033]" style={{ width: `${Math.min(100, item.count * 12)}%` }} />
+                  <div className="h-full bg-[#48CAE4]" style={{ width: `${Math.min(100, item.count * 12)}%` }} />
                 </div>
               </div>
             ))}
@@ -743,7 +753,7 @@ function UploadPanel({ dragging, setDragging, fileInput, folderInput, stageFiles
       <Panel title="Upload Destination">
         <label className="block text-xs text-[#DDDDDD]">
           Choose which folder new uploads should be filed into
-          <select className="focus-ring glass-input mt-2 w-full border border-[#4C0033] px-3 py-2 text-sm text-[#EEEEEE]" value={uploadFolderId} onChange={(event) => setUploadFolderId(event.target.value)}>
+          <select className="focus-ring glass-input mt-2 w-full border border-white/15 px-3 py-2 text-sm text-[#EEEEEE]" value={uploadFolderId} onChange={(event) => setUploadFolderId(event.target.value)}>
             <option value="">No folder (goes to All Files)</option>
             {options.map((option) => (
               <option key={option.id} value={option.id}>{option.label}</option>
@@ -753,7 +763,7 @@ function UploadPanel({ dragging, setDragging, fileInput, folderInput, stageFiles
       </Panel>
       <Panel title="Upload Terminal">
         <div
-          className={clsx("focus-ring flex min-h-72 flex-col items-center justify-center border border-dashed p-8 text-center transition-colors duration-200", dragging ? "border-[#4C0033] bg-[#4C0033]/20" : "border-[#4C0033]/60 bg-black/40")}
+          className={clsx("focus-ring flex min-h-72 flex-col items-center justify-center border border-dashed p-8 text-center transition-colors duration-200", dragging ? "border-white/15 bg-[#48CAE4]/10" : "border-white/20 bg-black/40")}
           tabIndex={0}
           onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
@@ -767,11 +777,11 @@ function UploadPanel({ dragging, setDragging, fileInput, folderInput, stageFiles
           <h2 className="text-xl font-semibold">Drop files into the secure upload channel</h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-[#DDDDDD]">Files are validated on the backend, checksummed, classified by verified MIME type, optionally encrypted, and routed to the configured Telegram destination. You&apos;ll be asked to confirm a name before each upload starts.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <button className="focus-ring flex items-center gap-2 bg-[#4C0033] px-4 py-2 text-sm font-semibold text-[#EEEEEE] hover:bg-[#650044]" onClick={() => fileInput.current?.click()}>
+            <button className="focus-ring flex items-center gap-2 bg-[#48CAE4] px-4 py-2 text-sm font-semibold text-[#000000] hover:bg-[#8EE6F2]" onClick={() => fileInput.current?.click()}>
               <Upload className="size-4" aria-hidden />
               Select Files
             </button>
-            <button className="focus-ring flex items-center gap-2 border border-[#4C0033] px-4 py-2 text-sm hover:bg-[#4C0033]/20" onClick={() => folderInput.current?.click()}>
+            <button className="focus-ring flex items-center gap-2 border border-white/15 px-4 py-2 text-sm hover:bg-[#48CAE4]/10" onClick={() => folderInput.current?.click()}>
               <FolderIcon className="size-4" aria-hidden />
               Select Folder
             </button>
@@ -795,7 +805,7 @@ function UploadPanel({ dragging, setDragging, fileInput, folderInput, stageFiles
                   {item.status === "uploading" && <button className="focus-ring p-2 text-[#DDDDDD]" aria-label="Cancel upload" onClick={() => cancelUpload(item)}><X className="size-4" /></button>}
                 </div>
               </div>
-              <div className="mt-3 h-2 bg-black/60"><div className="h-full bg-[#4C0033] transition-all duration-300" style={{ width: `${item.progress}%` }} /></div>
+              <div className="mt-3 h-2 bg-black/60"><div className="h-full bg-[#48CAE4] transition-all duration-300" style={{ width: `${item.progress}%` }} /></div>
               {item.error && <p className="mt-2 text-xs text-[#EEEEEE]">{item.error}</p>}
             </div>
           ))}
@@ -819,14 +829,14 @@ function RenameBeforeUploadModal({ files, folders, defaultFolderId, onCancel, on
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-      <div className="glass-panel modal-pop w-full max-w-lg border border-[#4C0033] p-5">
+      <div className="glass-panel modal-pop w-full max-w-lg border border-white/15 p-5">
         <div className="mb-4 flex items-center gap-2 text-[#EEEEEE]">
           <Pencil className="size-5" aria-hidden />
           <h2 className="text-lg font-semibold">Name your file{files.length > 1 ? "s" : ""} before uploading</h2>
         </div>
         <label className="mb-4 block text-xs text-[#DDDDDD]">
           Destination folder
-          <select className="focus-ring glass-input mt-2 w-full border border-[#4C0033] px-3 py-2 text-sm text-[#EEEEEE]" value={folderId} onChange={(event) => setFolderId(event.target.value)}>
+          <select className="focus-ring glass-input mt-2 w-full border border-white/15 px-3 py-2 text-sm text-[#EEEEEE]" value={folderId} onChange={(event) => setFolderId(event.target.value)}>
             <option value="">No folder (goes to All Files)</option>
             {options.map((option) => (
               <option key={option.id} value={option.id}>{option.label}</option>
@@ -839,7 +849,7 @@ function RenameBeforeUploadModal({ files, folders, defaultFolderId, onCancel, on
             <label key={`${file.name}-${index}`} className="block text-xs text-[#DDDDDD]">
               {file.name}
               <input
-                className="focus-ring glass-input mt-1 w-full border border-[#4C0033] px-3 py-2 text-sm text-[#EEEEEE]"
+                className="focus-ring glass-input mt-1 w-full border border-white/15 px-3 py-2 text-sm text-[#EEEEEE]"
                 value={names[index]}
                 onChange={(event) => setNames((current) => current.map((name, i) => i === index ? event.target.value : name))}
               />
@@ -847,9 +857,9 @@ function RenameBeforeUploadModal({ files, folders, defaultFolderId, onCancel, on
           ))}
         </div>
         <div className="mt-5 flex justify-end gap-3">
-          <button className="focus-ring border border-[#4C0033] px-4 py-2 text-sm text-[#DDDDDD] hover:bg-[#4C0033]/20" onClick={onCancel}>Cancel</button>
+          <button className="focus-ring border border-white/15 px-4 py-2 text-sm text-[#DDDDDD] hover:bg-[#48CAE4]/10" onClick={onCancel}>Cancel</button>
           <button
-            className="focus-ring flex items-center gap-2 bg-[#4C0033] px-4 py-2 text-sm font-semibold text-[#EEEEEE] hover:bg-[#650044]"
+            className="focus-ring flex items-center gap-2 bg-[#48CAE4] px-4 py-2 text-sm font-semibold text-[#000000] hover:bg-[#8EE6F2]"
             onClick={() => onConfirm(files.map((file, index) => ({ file, displayName: names[index]?.trim() || file.name })), folderId)}
           >
             <Upload className="size-4" aria-hidden />
@@ -865,15 +875,15 @@ function ConfirmModal({ open, title, message, onConfirm, onCancel }: { open: boo
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-      <div className="glass-panel modal-pop w-full max-w-sm border border-[#4C0033] p-5">
+      <div className="glass-panel modal-pop w-full max-w-sm border border-white/15 p-5">
         <div className="mb-3 flex items-center gap-2 text-[#EEEEEE]">
           <ShieldAlert className="size-5" aria-hidden />
           <h2 className="text-base font-semibold">{title}</h2>
         </div>
         <p className="mb-5 text-sm leading-6 text-[#DDDDDD]">{message}</p>
         <div className="flex justify-end gap-3">
-          <button className="focus-ring border border-[#4C0033] px-4 py-2 text-sm text-[#DDDDDD] hover:bg-[#4C0033]/20" onClick={onCancel}>No</button>
-          <button className="focus-ring bg-[#4C0033] px-4 py-2 text-sm font-semibold text-[#EEEEEE] hover:bg-[#650044]" onClick={onConfirm}>Yes</button>
+          <button className="focus-ring border border-white/15 px-4 py-2 text-sm text-[#DDDDDD] hover:bg-[#48CAE4]/10" onClick={onCancel}>No</button>
+          <button className="focus-ring bg-[#48CAE4] px-4 py-2 text-sm font-semibold text-[#000000] hover:bg-[#8EE6F2]" onClick={onConfirm}>Yes</button>
         </div>
       </div>
     </div>
@@ -896,9 +906,10 @@ function PrivatePasscodeGate({ onUnlock }: { onUnlock: () => void }) {
     <Panel title="Private Content">
       <form onSubmit={submit} className="mx-auto flex max-w-sm flex-col items-center gap-4 py-8 text-center">
         <KeyRound className="size-10 text-[#EEEEEE]" aria-hidden />
-        <p className="text-sm text-[#DDDDDD]">Enter your 6-digit passcode to unlock private content.</p>
+        <p className="text-sm text-[#DDDDDD]">Enter your passcode to unlock private content.</p>
         <input
-          className="focus-ring glass-input w-full border border-[#4C0033] px-3 py-3 text-center text-lg tracking-[0.5em] text-[#EEEEEE]"
+          className="focus-ring glass-input w-full border border-white/15 px-3 py-3 text-center text-lg tracking-[0.5em] text-[#EEEEEE]"
+          type="password"
           value={code}
           onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
           inputMode="numeric"
@@ -906,7 +917,7 @@ function PrivatePasscodeGate({ onUnlock }: { onUnlock: () => void }) {
           autoFocus
         />
         {error && <p className="text-sm text-[#EEEEEE]">{error}</p>}
-        <button className="focus-ring flex items-center gap-2 bg-[#4C0033] px-5 py-2 text-sm font-semibold text-[#EEEEEE] hover:bg-[#650044]" type="submit">
+        <button className="focus-ring flex items-center gap-2 bg-[#48CAE4] px-5 py-2 text-sm font-semibold text-[#000000] hover:bg-[#8EE6F2]" type="submit">
           <LockKeyhole className="size-4" aria-hidden />
           Unlock
         </button>
@@ -938,6 +949,7 @@ function TechnologyWeb({ folders, currentId, rootId, setCurrentId, createFolder,
 
   async function submitNewFolder(event: React.FormEvent) {
     event.preventDefault();
+    if (!currentId) return;
     const name = newFolderName.trim();
     if (!name) return;
     await createFolder(name, currentId);
@@ -948,7 +960,7 @@ function TechnologyWeb({ folders, currentId, rootId, setCurrentId, createFolder,
     <div className="space-y-4">
       <Panel title="Technology Web">
         <div className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[#DDDDDD]">
-          <button className="focus-ring flex items-center gap-1 px-2 py-1 hover:text-[#EEEEEE]" onClick={() => setCurrentId(rootId)}>
+          <button className="focus-ring flex items-center gap-1 px-2 py-1 hover:text-[#EEEEEE]" onClick={() => setCurrentId(rootId)} disabled={!rootId}>
             <FolderTree className="size-3.5" aria-hidden />
             Technology Web
           </button>
@@ -962,23 +974,24 @@ function TechnologyWeb({ folders, currentId, rootId, setCurrentId, createFolder,
 
         <form onSubmit={submitNewFolder} className="mb-4 flex flex-wrap gap-2">
           <input
-            className="focus-ring glass-input min-w-0 flex-1 border border-[#4C0033] px-3 py-2 text-sm text-[#EEEEEE]"
+            className="focus-ring glass-input min-w-0 flex-1 border border-white/15 px-3 py-2 text-sm text-[#EEEEEE]"
             placeholder="New folder name (semester, subject, or custom)"
             value={newFolderName}
             onChange={(event) => setNewFolderName(event.target.value)}
           />
-          <button className="focus-ring flex items-center gap-2 bg-[#4C0033] px-4 py-2 text-sm font-semibold text-[#EEEEEE] hover:bg-[#650044]" type="submit">
+          <button className="focus-ring flex items-center gap-2 bg-[#48CAE4] px-4 py-2 text-sm font-semibold text-[#000000] hover:bg-[#8EE6F2] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={!currentId}>
             <FolderPlus className="size-4" aria-hidden />
             Add Folder
           </button>
         </form>
 
-        {children.length === 0 && files.length === 0 && <Empty label="This folder is empty — add a subfolder or upload files into it" />}
+        {!rootId && <Empty label="Technology Web folders are loading" />}
+        {rootId && children.length === 0 && files.length === 0 && <Empty label="This folder is empty — add a subfolder or upload files into it" />}
 
         {children.length > 0 && (
           <div className="mb-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
             {children.map((folder, index) => (
-              <div key={folder.id} className="folder-tile card-enter glass-raised group relative flex items-center gap-3 border border-[#4C0033]/50 p-3" style={{ animationDelay: `${index * 30}ms` }}>
+              <div key={folder.id} className="folder-tile card-enter glass-raised group relative flex items-center gap-3 border border-white/10 p-3" style={{ animationDelay: `${index * 30}ms` }}>
                 <button className="flex min-w-0 flex-1 items-center gap-3 text-left" onClick={() => setCurrentId(folder.id)}>
                   <FolderIcon className="size-6 shrink-0 text-[#EEEEEE]" aria-hidden />
                   <span className="min-w-0 truncate text-sm">{folder.name}</span>
@@ -1030,7 +1043,7 @@ function FileManager({ title, files, view, setView, sort, setSort, mutateFile, d
   return (
     <Panel title={title ?? "File Manager"} actions={(
       <div className="flex items-center gap-2">
-        <select className="focus-ring border border-[#4C0033] bg-black/60 px-2 py-1 text-xs text-[#EEEEEE]" value={sort} onChange={(event) => setSort(event.target.value)}>
+        <select className="focus-ring border border-white/15 bg-black/60 px-2 py-1 text-xs text-[#EEEEEE]" value={sort} onChange={(event) => setSort(event.target.value)}>
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
           <option value="name">Name</option>
@@ -1177,13 +1190,13 @@ function FileRows({ files, compact, mutateFile, downloadFile, deleteFile }: {
       <div className="hidden overflow-x-auto md:block">
         <table className={clsx("w-full text-left text-sm", !compact && "min-w-[720px]")}>
           <thead className="text-xs text-[#DDDDDD]">
-            <tr className="border-b border-[#4C0033]">
+            <tr className="border-b border-white/15">
               <th className="py-2">Name</th><th>Category</th><th>Size</th><th>Status</th>{!compact && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
             {files.map((file) => (
-              <tr key={file.id} className="border-b border-[#4C0033]/50 transition-colors duration-150 hover:bg-[#4C0033]/15">
+              <tr key={file.id} className="border-b border-white/10 transition-colors duration-150 hover:bg-[#48CAE4]/10">
                 <td className="max-w-72 truncate py-3">{file.displayName}</td>
                 <td>{file.category}</td>
                 <td>{bytes(file.fileSize)}</td>
@@ -1245,14 +1258,14 @@ function Destinations({ csrf, refreshCsrf, runTelegramCheck, results, addLog }: 
   }
 
   return (
-    <Panel title="Telegram Destinations" actions={<div className="flex gap-2"><button className="focus-ring flex items-center gap-2 border border-[#4C0033] px-3 py-2 text-xs hover:bg-[#4C0033]/20" onClick={saveDestinations}><CheckCircle2 className="size-4" />Save</button><button className="focus-ring flex items-center gap-2 bg-[#4C0033] px-3 py-2 text-xs font-semibold text-[#EEEEEE] hover:bg-[#650044]" onClick={runTelegramCheck}><Bot className="size-4" />Test</button></div>}>
+    <Panel title="Telegram Destinations" actions={<div className="flex gap-2"><button className="focus-ring flex items-center gap-2 border border-white/15 px-3 py-2 text-xs hover:bg-[#48CAE4]/10" onClick={saveDestinations}><CheckCircle2 className="size-4" />Save</button><button className="focus-ring flex items-center gap-2 bg-[#48CAE4] px-3 py-2 text-xs font-semibold text-[#000000] hover:bg-[#8EE6F2]" onClick={runTelegramCheck}><Bot className="size-4" />Test</button></div>}>
       <p className="mb-4 text-sm leading-6 text-[#DDDDDD]">Images, videos, audio, documents, archives, and other files route to separate private Telegram destinations. Bot tokens and full API URLs never render in the browser.</p>
       <div className="mb-4 grid gap-3 md:grid-cols-2">
         {destinations.map((destination, index) => (
-          <label key={destination.category} className="glass-raised block border border-[#4C0033]/50 p-3 text-xs text-[#DDDDDD]">
+          <label key={destination.category} className="glass-raised block border border-white/10 p-3 text-xs text-[#DDDDDD]">
             {destination.label} chat ID
             <input
-              className="focus-ring mt-2 w-full border border-[#4C0033] bg-black/50 px-3 py-2 text-[#EEEEEE]"
+              className="focus-ring mt-2 w-full border border-white/15 bg-black/50 px-3 py-2 text-[#EEEEEE]"
               placeholder={destination.chatIdPreview}
               value={destination.chatId ?? ""}
               onChange={(event) => setDestinations((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, chatId: event.target.value } : item))}
@@ -1260,7 +1273,7 @@ function Destinations({ csrf, refreshCsrf, runTelegramCheck, results, addLog }: 
           </label>
         ))}
       </div>
-      <pre className="max-h-96 overflow-auto border border-[#4C0033] bg-black/50 p-4 text-xs text-[#DDDDDD]">{JSON.stringify(results.length ? results : { status: "Run a health check to verify mappings" }, null, 2)}</pre>
+      <pre className="max-h-96 overflow-auto border border-white/15 bg-black/50 p-4 text-xs text-[#DDDDDD]">{JSON.stringify(results.length ? results : { status: "Run a health check to verify mappings" }, null, 2)}</pre>
     </Panel>
   );
 }
@@ -1310,18 +1323,18 @@ function SettingsPanel({ csrf, refreshCsrf, addLog }: { csrf: string; refreshCsr
   }
 
   return (
-    <Panel title="Settings" actions={<button className="focus-ring flex items-center gap-2 bg-[#4C0033] px-3 py-2 text-xs font-semibold text-[#EEEEEE] hover:bg-[#650044]" onClick={saveSettings}><CheckCircle2 className="size-4" />Save</button>}>
+    <Panel title="Settings" actions={<button className="focus-ring flex items-center gap-2 bg-[#48CAE4] px-3 py-2 text-xs font-semibold text-[#000000] hover:bg-[#8EE6F2]" onClick={saveSettings}><CheckCircle2 className="size-4" />Save</button>}>
       <div className="grid gap-3">
-        <label className="block text-xs text-[#DDDDDD]">Maximum upload size MB<input className="focus-ring mt-2 w-full border border-[#4C0033] bg-black/50 px-3 py-2 text-[#EEEEEE]" type="number" value={settings.maxUploadSizeMb} onChange={(event) => setSettings({ ...settings, maxUploadSizeMb: Number(event.target.value) })} /></label>
-        <label className="block text-xs text-[#DDDDDD]">Allowed MIME types<input className="focus-ring mt-2 w-full border border-[#4C0033] bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.allowedMimeTypes} onChange={(event) => setSettings({ ...settings, allowedMimeTypes: event.target.value })} /></label>
-        <label className="block text-xs text-[#DDDDDD]">Blocked MIME types<input className="focus-ring mt-2 w-full border border-[#4C0033] bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.blockedMimeTypes} onChange={(event) => setSettings({ ...settings, blockedMimeTypes: event.target.value })} /></label>
-        <label className="block text-xs text-[#DDDDDD]">Allowed extensions<input className="focus-ring mt-2 w-full border border-[#4C0033] bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.allowedExtensions} onChange={(event) => setSettings({ ...settings, allowedExtensions: event.target.value })} /></label>
-        <label className="block text-xs text-[#DDDDDD]">Blocked extensions<input className="focus-ring mt-2 w-full border border-[#4C0033] bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.blockedExtensions} onChange={(event) => setSettings({ ...settings, blockedExtensions: event.target.value })} /></label>
+        <label className="block text-xs text-[#DDDDDD]">Maximum upload size MB<input className="focus-ring mt-2 w-full border border-white/15 bg-black/50 px-3 py-2 text-[#EEEEEE]" type="number" value={settings.maxUploadSizeMb} onChange={(event) => setSettings({ ...settings, maxUploadSizeMb: Number(event.target.value) })} /></label>
+        <label className="block text-xs text-[#DDDDDD]">Allowed MIME types<input className="focus-ring mt-2 w-full border border-white/15 bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.allowedMimeTypes} onChange={(event) => setSettings({ ...settings, allowedMimeTypes: event.target.value })} /></label>
+        <label className="block text-xs text-[#DDDDDD]">Blocked MIME types<input className="focus-ring mt-2 w-full border border-white/15 bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.blockedMimeTypes} onChange={(event) => setSettings({ ...settings, blockedMimeTypes: event.target.value })} /></label>
+        <label className="block text-xs text-[#DDDDDD]">Allowed extensions<input className="focus-ring mt-2 w-full border border-white/15 bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.allowedExtensions} onChange={(event) => setSettings({ ...settings, allowedExtensions: event.target.value })} /></label>
+        <label className="block text-xs text-[#DDDDDD]">Blocked extensions<input className="focus-ring mt-2 w-full border border-white/15 bg-black/50 px-3 py-2 text-[#EEEEEE]" value={settings.blockedExtensions} onChange={(event) => setSettings({ ...settings, blockedExtensions: event.target.value })} /></label>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="glass-raised flex items-center gap-3 border border-[#4C0033]/50 p-4 text-sm"><input type="checkbox" checked={settings.encryptionEnabled} onChange={(event) => setSettings({ ...settings, encryptionEnabled: event.target.checked })} />AES-256-GCM encryption</label>
-          <label className="glass-raised flex items-center gap-3 border border-[#4C0033]/50 p-4 text-sm"><input type="checkbox" checked={settings.chunkingEnabled} onChange={(event) => setSettings({ ...settings, chunkingEnabled: event.target.checked })} />Experimental chunking</label>
+          <label className="glass-raised flex items-center gap-3 border border-white/10 p-4 text-sm"><input type="checkbox" checked={settings.encryptionEnabled} onChange={(event) => setSettings({ ...settings, encryptionEnabled: event.target.checked })} />AES-256-GCM encryption</label>
+          <label className="glass-raised flex items-center gap-3 border border-white/10 p-4 text-sm"><input type="checkbox" checked={settings.chunkingEnabled} onChange={(event) => setSettings({ ...settings, chunkingEnabled: event.target.checked })} />Experimental chunking</label>
         </div>
-        <div className="glass-raised border border-[#4C0033]/50 p-4 text-sm leading-6 text-[#DDDDDD]">Losing `FILE_ENCRYPTION_KEY` makes encrypted files unrecoverable. Chunking increases upload time, download time, and failure risk.</div>
+        <div className="glass-raised border border-white/10 p-4 text-sm leading-6 text-[#DDDDDD]">Losing `FILE_ENCRYPTION_KEY` makes encrypted files unrecoverable. Chunking increases upload time, download time, and failure risk.</div>
       </div>
     </Panel>
   );
@@ -1353,7 +1366,7 @@ function ActivityPanel() {
 function TerminalPanel({ logs }: { logs: LogLine[] }) {
   return (
     <aside className="glass-panel min-h-96">
-      <div className="flex items-center justify-between border-b border-[#4C0033] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-white/15 px-4 py-3">
         <div className="flex items-center gap-2"><Terminal className="size-4 text-[#EEEEEE]" /><h2 className="text-sm font-semibold">Terminal Activity Output</h2></div>
         <CheckCircle2 className="size-4 text-[#DDDDDD]" aria-hidden />
       </div>
@@ -1371,7 +1384,7 @@ function TerminalPanel({ logs }: { logs: LogLine[] }) {
 function Panel({ title, actions, children }: { title: string; actions?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="glass-panel overflow-hidden shadow-[0_14px_36px_rgba(0,0,0,0.5)]">
-      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-[#4C0033] px-4 py-3">
+      <div className="flex min-h-12 items-center justify-between gap-3 border-b border-white/15 px-4 py-3">
         <h2 className="text-sm font-semibold text-[#EEEEEE]">{title}</h2>
         {actions}
       </div>

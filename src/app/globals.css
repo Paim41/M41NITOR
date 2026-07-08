@@ -3,20 +3,20 @@
 :root {
   /* ---- M41NITOR palette (fixed 4-color system) ---- */
   --c-black: #000000;
-  --c-maroon: #4C0033;
   --c-grey: #DDDDDD;
   --c-white: #EEEEEE;
+  --c-accent: #48CAE4;
 
   --background: var(--c-black);
   --foreground: var(--c-white);
   --panel: var(--c-black);
-  --raised: #170010;
-  --border: var(--c-maroon);
-  --primary: var(--c-maroon);
-  --primary-glow: #8a0055;
+  --raised: #0a0a0a;
+  --border: rgba(221, 221, 221, 0.18);
+  --primary: var(--c-accent);
+  --primary-glow: rgba(72, 202, 228, 0.55);
   --secondary: var(--c-grey);
-  --warning: #b8860b;
-  --error: #8b1a2b;
+  --warning: var(--c-grey);
+  --error: var(--c-white);
 
   --gray-100: var(--c-white);
   --gray-200: var(--c-grey);
@@ -42,27 +42,40 @@ html, body {
 }
 
 body {
-  background-color: var(--c-black);
-  background-image:
-    linear-gradient(160deg, rgba(0, 0, 0, 0.72), rgba(76, 0, 51, 0.55)),
-    url("/brand/m41nitor-bg-desktop.png");
-  background-position: center top;
-  background-size: cover;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
+  background: var(--c-black);
   color: var(--foreground);
   font-family: var(--font-terminal), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   min-height: 100dvh;
+  position: relative;
+  isolation: isolate;
 }
 
-/* Responsive wallpaper: swap to the portrait piece on small / mobile viewports */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: -2;
+  background: url("/brand/m41nitor-bg-desktop.png") center top / cover no-repeat;
+}
+
+body::after {
+  z-index: -1;
+  background: linear-gradient(160deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.5));
+}
+
 @media (max-width: 767px) {
-  body {
-    background-image:
-      linear-gradient(180deg, rgba(0, 0, 0, 0.78), rgba(76, 0, 51, 0.62)),
-      url("/brand/m41nitor-bg-mobile.png");
+  body::before {
+    background-image: url("/brand/m41nitor-bg-mobile.png");
     background-position: center top;
-    background-attachment: scroll;
+  }
+
+  body::after {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.76), rgba(0, 0, 0, 0.44));
   }
 }
 
@@ -72,21 +85,21 @@ button, input, textarea, select {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--c-maroon) #0a0a0a;
+  scrollbar-color: rgba(221, 221, 221, 0.35) #0a0a0a;
 }
 
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: #0a0a0a; }
-*::-webkit-scrollbar-thumb { background: var(--c-maroon); border-radius: 8px; }
+*::-webkit-scrollbar-thumb { background: rgba(221, 221, 221, 0.35); border-radius: 8px; }
 *::-webkit-scrollbar-thumb:hover { background: var(--primary-glow); }
 
 .glass-active {
   background:
-    linear-gradient(180deg, rgba(76, 0, 51, 0.55), rgba(76, 0, 51, 0.22)),
+    linear-gradient(180deg, rgba(72, 202, 228, 0.18), rgba(72, 202, 228, 0.06)),
     rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(138, 0, 85, 0.65);
+  border: 1px solid rgba(72, 202, 228, 0.5);
   box-shadow:
-    0 8px 24px rgba(76, 0, 51, 0.35),
+    0 8px 24px rgba(72, 202, 228, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -94,14 +107,14 @@ button, input, textarea, select {
 
 .terminal-grid {
   background-image:
-    linear-gradient(rgba(76, 0, 51, 0.14) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(76, 0, 51, 0.14) 1px, transparent 1px);
+    linear-gradient(rgba(221, 221, 221, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(221, 221, 221, 0.07) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 .app-surface {
   background:
-    linear-gradient(rgba(0, 0, 0, 0.20), rgba(76, 0, 51, 0.14)),
+    linear-gradient(rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.1)),
     transparent;
 }
 
@@ -119,7 +132,7 @@ button, input, textarea, select {
 
 .glass-raised {
   background:
-    linear-gradient(180deg, rgba(76, 0, 51, 0.20), rgba(0, 0, 0, 0.35)),
+    linear-gradient(180deg, rgba(238, 238, 238, 0.06), rgba(0, 0, 0, 0.35)),
     rgba(10, 10, 10, 0.45);
   border: 1px solid rgba(221, 221, 221, 0.10);
   box-shadow:
@@ -142,7 +155,7 @@ button, input, textarea, select {
 }
 
 .bg-\[\#343A40\] {
-  background: rgba(76, 0, 51, 0.24);
+  background: rgba(221, 221, 221, 0.08);
   backdrop-filter: blur(10px);
 }
 
@@ -159,7 +172,7 @@ button, input, textarea, select {
 }
 
 .focus-ring:focus-visible {
-  outline: 2px solid var(--c-maroon);
+  outline: 2px solid var(--c-accent);
   outline-offset: 2px;
 }
 
@@ -172,9 +185,9 @@ article.glass-raised {
 .hover-card:hover,
 article.glass-raised:hover {
   transform: translateY(-4px) scale(1.012);
-  border-color: rgba(138, 0, 85, 0.75);
+  border-color: rgba(72, 202, 228, 0.45);
   box-shadow:
-    0 20px 44px rgba(76, 0, 51, 0.5),
+    0 20px 44px rgba(0, 0, 0, 0.52),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -184,10 +197,10 @@ article.glass-raised:hover {
   border-left: 2px solid transparent;
 }
 .nav-link:hover {
-  background: rgba(76, 0, 51, 0.28);
+  background: rgba(72, 202, 228, 0.08);
   color: var(--c-white);
   padding-left: 0.9rem;
-  border-left-color: var(--c-maroon);
+  border-left-color: var(--c-accent);
 }
 
 button {
@@ -205,8 +218,8 @@ button:active:not(:disabled) {
 }
 .folder-tile:hover {
   transform: translateY(-3px);
-  background: rgba(76, 0, 51, 0.30);
-  box-shadow: 0 14px 30px rgba(76, 0, 51, 0.4);
+  background: rgba(72, 202, 228, 0.08);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45);
 }
 
 /* ---------------- Page load transition ---------------- */

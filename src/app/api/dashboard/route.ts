@@ -2,14 +2,25 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { destinationLabels } from "@/lib/destination";
+import { collectDescendantIds, ensureSystemFolders } from "@/lib/folders";
 import { categories } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   const session = await requireAdmin();
+  const roots = await ensureSystemFolders(session.userId);
+  const privateFolderIds = await collectDescendantIds(session.userId, roots.privateContent.id);
   const [files, failedUploads, recoveries] = await Promise.all([
-    prisma.fileRecord.findMany({ where: { ownerId: session.userId, deletedAt: null }, orderBy: { createdAt: "desc" }, take: 500 }),
+    prisma.fileRecord.findMany({
+      where: {
+        ownerId: session.userId,
+        deletedAt: null,
+        NOT: { customFolderId: { in: privateFolderIds } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+    }),
     prisma.fileRecord.count({ where: { ownerId: session.userId, uploadStatus: "failed" } }),
     prisma.uploadRecovery.count({ where: { ownerId: session.userId } }),
   ]);

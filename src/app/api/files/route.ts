@@ -4,6 +4,7 @@ import { assertCsrf, requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { serializeFile } from "@/lib/serialize";
 import { jsonError } from "@/lib/responses";
+import { collectDescendantIds, ensureSystemFolders } from "@/lib/folders";
 import { categories, type FileCategory } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -39,13 +40,19 @@ export async function GET(request: Request) {
     parsed.sort === "smallest" ? { fileSize: "asc" as const } :
     parsed.sort === "name" ? { displayName: "asc" as const } :
     { createdAt: "desc" as const };
+  const roots = await ensureSystemFolders(session.userId);
+  const scopedFolderIds = parsed.folderId ? await collectDescendantIds(session.userId, parsed.folderId) : undefined;
+  const privateFolderIds = parsed.folderId ? [] : await collectDescendantIds(session.userId, roots.privateContent.id);
 
   const files = await prisma.fileRecord.findMany({
     where: {
       ownerId: session.userId,
       deletedAt: parsed.trash === "true" ? { not: null } : null,
       category,
-      customFolderId: parsed.folderId ? parsed.folderId : undefined,
+      customFolderId: scopedFolderIds ? { in: scopedFolderIds } : undefined,
+      ...(privateFolderIds.length
+        ? { NOT: { customFolderId: { in: privateFolderIds } } }
+        : {}),
       OR: q
         ? [
             { originalName: { contains: q, mode: "insensitive" } },
