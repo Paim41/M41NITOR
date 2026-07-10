@@ -1,15 +1,17 @@
 <div align="center">
 
-<img width="90" height="90" alt="m41nitor-logo" src="https://github.com/user-attachments/assets/ddc29ff7-43e5-44aa-aa10-60fe33d72157" />
+<img width="90" height="90" alt="1783521751917" src="https://github.com/user-attachments/assets/33d8cfc6-3650-43eb-8a93-4557808d04cc" />
+
 
 # M41NITOR
 **A terminal-inspired file manager with unlimited storage — powered by Telegram.**
 
 Drag, drop, and forget about storage limits. Files route straight into your own private Telegram channels; PostgreSQL just remembers where everything went.
 
-[![Encrypted](https://img.shields.io/badge/AES--256--GCM-Encryption-F72585?style=for-the-badge&logoColor=212529)](#)
-[![Self Hosted](https://img.shields.io/badge/Self--Hosted-Storage-343A40?style=for-the-badge)](#)
-[![Type](https://img.shields.io/badge/Type-File%20Manager-212529?style=for-the-badge)](#)
+[![Live Demo](https://img.shields.io/badge/OPEN%20TERMINAL-Live%20Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://m41-nitor.vercel.app/)
+[![Encrypted](https://img.shields.io/badge/AES--256--GCM-Encryption-333333?style=for-the-badge)](https://m41-nitor.vercel.app/)
+[![Self Hosted](https://img.shields.io/badge/Self--Hosted-Storage-666666?style=for-the-badge)](https://m41-nitor.vercel.app/)
+[![Type](https://img.shields.io/badge/Type-File%20Manager-999999?style=for-the-badge)](https://m41-nitor.vercel.app/)
 
 </div>
 
@@ -19,7 +21,7 @@ Drag, drop, and forget about storage limits. Files route straight into your own 
 
 M41NITOR is a **private, terminal-inspired file manager** that uses Telegram as its storage backend.
 
-Telegram holds the actual file content in your own private chats; PostgreSQL keeps the searchable metadata. The result is a black-and-pink terminal UI over what is effectively unlimited, free cloud storage — under your own control.
+Telegram holds the actual file content in your own private chats; PostgreSQL keeps the searchable metadata. The result is a black-and-white terminal UI over what is effectively unlimited, free cloud storage — under your own control.
 
 > *"Your files. Your channels. Your terminal."*
 
@@ -59,7 +61,7 @@ Terminal View        →  Grid / table, search, favourites, signed downloads
 ```
 Purpose  → Personal, private, self-hosted file storage
 Backend  → Telegram private channels (content) + PostgreSQL (metadata)
-Theme    → Black & pink terminal
+Theme    → Black, grey, white terminal
 Not For  → Public file sharing or CDN-style hosting
 ```
 
@@ -176,5 +178,7 @@ Back up PostgreSQL regularly. Telegram holds the content, but the database holds
 <div align="center">
 
 *M41NITOR — your files, your channels, your terminal.*
+
+[m41-nitor.vercel.app](https://m41-nitor.vercel.app/)
 
 </div>
